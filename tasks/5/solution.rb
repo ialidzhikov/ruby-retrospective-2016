@@ -10,9 +10,7 @@ module Store
   end
 
   def matches?(record, query)
-    query.all? do |key, value|
-      record[key] == value
-    end
+    query.all? { |key, value| record[key] == value }
   end
 end
 
@@ -60,9 +58,9 @@ class HashStore
   end
 
   def create(record)
-    id = record[:id] || next_id
-    record[:id] = id
-    @storage[id] = record
+    record[:id] = next_id unless record[:id]
+
+    @storage[record[:id]] = record
   end
 
   def find(query)
@@ -89,10 +87,10 @@ module Model
     init_attributes(attributes)
   end
 
-  def data_store(*args)
-    return @data_store if args.empty?
+  def data_store(store = nil)
+    return @data_store unless store
 
-    @data_store = args[0]
+    @data_store = store
   end
 
   def where(query)
@@ -110,7 +108,7 @@ module Model
   def init_attributes(attributes)
     @attributes = attributes
     attributes.each do |attribute|
-      class_eval { attr_accessor attribute }
+      attr_accessor attribute
       define_singleton_method "find_by_#{attribute}" do |value|
         @data_store.find(attribute => value).map { |record| new(record) }
       end
@@ -135,13 +133,9 @@ class DataModel
   end
 
   def ==(other)
-    return false if other.nil?
+    return id == other.id if id && other&.id
 
-    if !(@id.nil? && other.id.nil?)
-      @id == other.id
-    else
-      object_id == other.object_id
-    end
+    equal? other
   end
 
   def save
