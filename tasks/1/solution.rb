@@ -11,11 +11,11 @@ class Substance
 end
 
 SUBSTANCES = {
-  'water' => Substance.new('water', 0, 100),
-  'ethanol' => Substance.new('ethanol', -114, 78.37),
-  'gold' => Substance.new('gold', 1064, 2700),
-  'silver' => Substance.new('silver', 961.8, 2162),
-  'copper' => Substance.new('cooper', 1085, 2567)
+  water: Substance.new('water', 0, 100),
+  ethanol: Substance.new('ethanol', -114, 78.37),
+  gold: Substance.new('gold', 1064, 2700),
+  silver: Substance.new('silver', 961.8, 2162),
+  copper: Substance.new('cooper', 1085, 2567)
 }
 
 def convert_between_temperature_units(degrees, from, to)
@@ -50,17 +50,9 @@ def convert_from_celsius_to(degrees, unit)
 end
 
 def melting_point_of_substance(substance, unit)
-  unless SUBSTANCES.key?(substance)
-    raise ArgumentError.new("Unknown substance #{substance}.")
-  end
-
-  convert_from_celsius_to(SUBSTANCES[substance].melting_point, unit)
+  convert_from_celsius_to(SUBSTANCES[substance.to_sym].melting_point, unit)
 end
 
 def boiling_point_of_substance(substance, unit)
-  unless SUBSTANCES.key?(substance)
-    raise ArgumentError.new("Unknown substance #{substance}.")
-  end
-  
-  convert_from_celsius_to(SUBSTANCES[substance].boiling_point, unit)
+  convert_from_celsius_to(SUBSTANCES[substance.to_sym].boiling_point, unit)
 end
