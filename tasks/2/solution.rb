@@ -1,55 +1,31 @@
-class Integer
-  def self.number?(arg)
-    arg.to_i.to_s == arg
-  end
-end
-
 class Hash
   def fetch_deep(path)
-    path.split('.').reduce(self) do |memo, key|
-      return unless memo
-      
-      if memo.is_a? Array
-        memo[key.to_i] if Integer.number? key
-      else
-        memo[key] || memo[key.to_sym]
-      end
-    end
+    key, nested_path = path.split('.', 2)
+    value = self[key] || self[key.to_sym]
+
+    return value unless nested_path
+
+    value.fetch_deep(nested_path) if value
   end
 
   def reshape(shape)
-    shape_copy = clone_deep(shape)
-    new_self = reshape_recursive(shape_copy)
+    return fetch_deep(shape) if shape.is_a? String
 
-    self.replace(new_self)
-  end
-
-  private
-
-  def reshape_recursive(shape)
-    shape.each do |key, value|
-      if value.is_a? Hash
-        shape[key] = reshape_recursive(value)
-      elsif value.is_a? String
-        shape[key] = self.fetch_deep(value)
-      end
-    end
-  end
-
-  def clone_deep(hash)
-    new_hash = {}
-    hash.each do |key, value|
-      new_hash[key] = (value.is_a? Hash) ? clone_deep(value) : value.clone
-    end
-
-    new_hash
+    shape.map do |key, value|
+      [key, reshape(value)]
+    end.to_h
   end
 end
 
 class Array
   def reshape(shape)
-    self.each do |e|
-      e.reshape(shape)
-    end
+    map { |e| e.reshape(shape) }
+  end
+
+  def fetch_deep(path)
+    key, nested_path = path.split('.', 2)
+    element = self[key.to_i]
+
+    element.fetch_deep(nested_path) if element
   end
 end
