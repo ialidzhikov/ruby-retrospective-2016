@@ -1,9 +1,10 @@
 RSpec.describe 'Version' do
-  let(:version_square) { Version.new('1.4.9.16') }
-  let(:major_range) { Version::Range.new('1', '2') }
+  def v(version_string)
+    Version.new(version_string)
+  end
 
   def expect_error(version)
-    expect { Version.new(version) }
+    expect { v(version) }
       .to raise_error(ArgumentError, "Invalid version string '#{version}'")
   end
 
@@ -25,45 +26,44 @@ RSpec.describe 'Version' do
   describe '#components' do
     it 'can get components with zerolike versions' do
       expect(Version.new.components).to eq []
-      expect(Version.new('').components).to eq []
-      expect(Version.new('0').components).to eq []
+      expect(v('').components).to eq []
+      expect(v('0').components).to eq []
     end
 
     it 'can get components when version is created via existing one' do
-      version = Version.new(version_square)
-      expect(version.components).to eq [1, 4, 9, 16]
+      expect(v(v('1.4.9.16')).components).to eq [1, 4, 9, 16]
     end
 
     it 'can get components when version has trailing zeros' do
-      version = Version.new('1.2.3.4.0.0')
-      expect(version.components).to eq [1, 2, 3, 4]
+      expect(v('1.2.3.4.0.0').components).to eq [1, 2, 3, 4]
     end
 
     it 'can get components when given length is equal to version numbers' do
-      expect(version_square.components(4)).to eq [1, 4, 9, 16]
+      expect(v('1.4.9.16').components(4)).to eq [1, 4, 9, 16]
     end
 
     it 'can get components when given length is less than version numbers' do
-      expect(version_square.components(3)).to eq [1, 4, 9]
+      expect(v('1.4.9.16').components(3)).to eq [1, 4, 9]
     end
 
     context 'when given length is bigger than version numbers' do
       it 'can get components ' do
-        expect(version_square.components(6)).to eq([1, 4, 9, 16, 0, 0])
+        expect(v('1.4.9.16').components(6)).to eq([1, 4, 9, 16, 0, 0])
       end
     end
 
     it 'can get components' do
-      expect(version_square.components).to eq [1, 4, 9, 16]
+      expect(v('1.4.9.16').components).to eq [1, 4, 9, 16]
     end
 
     it 'does not allow modification of the class internal state' do
-      version_square.components.pop
-      expect(version_square.components).to eq [1, 4, 9, 16]
+      version = v('1.4.9.16')
+      version.components.pop
+      expect(version.components).to eq [1, 4, 9, 16]
     end
 
     it 'does not allow modification of the other class internal state' do
-      version = Version.new(version_square)
+      version = v(v('1.4.9.16'))
       version.components.pop
       expect(version.components).to eq [1, 4, 9, 16]
     end
@@ -72,35 +72,50 @@ RSpec.describe 'Version' do
   describe '<=>' do
     context 'when lengths are equal' do
       it 'knows the bigger version' do
-        actual = Version.new('1.4.9.17') <=> version_square
-        expect(actual).to eq 1
+        expect(v('1.4.9.17') <=> v('1.4.9.16')).to eq 1
+        expect(v('2.1.1')).to be > v('2.1.0')
+        expect(v('2.1.1')).to be >= v('2.0.1')
+        expect(v('0.7')).to_not be > v('0.9')
+        expect(v('1.0.0.1')).to_not be >= v('1.9.9.9')
       end
 
       it 'knows the lower version' do
-        actual = Version.new('1.4.9.15') <=> version_square
-        expect(actual).to eq -1
+        expect(v('1.4.9.15') <=> v('1.4.9.16')).to eq -1
+        expect(v('2.1.1')).to be < v('2.1.7')
+        expect(v('2.1.1')).to be <= v('2.2.1')
+        expect(v('0.1')).to_not be < v('0.0.0')
+        expect(v('1.0.0.1')).to_not be <= v('0.0.0.9')
       end
 
       it 'knows that versions are equal' do
-        actual = Version.new('1.4.9.16') <=> version_square
-        expect(actual).to eq 0
+        other = v('1.4.9.16')
+        expect(v('1.4.9.16') <=> other).to eq 0
+        expect(v('6.2.0')).to be >= v('6.2.0')
+        expect(v('0.2')).to be <= v('0.2')
       end
     end
 
     context 'when lengths are not equal' do
       it 'knows the bigger version' do
-        actual = Version.new('1.4.9.16.8') <=> version_square
-        expect(actual).to eq 1
+        expect(v('1.4.9.16.8') <=> v('1.4.9.16')).to eq 1
+        expect(v('1.5')).to be > v('1.4.9.16')
+        expect(v('1.5.3')).to be >= v('1.5')
+        expect(v('0.2')).to_not be > v('1.0.9')
+        expect(v('0.2')).to_not be >= v('3.1.1')
       end
 
       it 'knows the lower version' do
-        actual = Version.new('1.4.9.15.2.1') <=> version_square
-        expect(actual).to eq -1
+        expect(v('1.4.9.15.2.1') <=> v('1.4.9.16')).to eq -1
+        expect(v('1.3')).to be < v('1.4.9.16')
+        expect(v('1.5.3')).to be <= v('1.6')
+        expect(v('0.2')).to_not be < v('0.0.2.9')
+        expect(v('0.2')).to_not be <= v('0.1.1.1')
       end
 
       it 'knows that versions are equal' do
-        actual = Version.new('1.4.9.16.0.0') <=> version_square
-        expect(actual).to eq 0
+        expect(v('1.4.9.16.0.0') <=> v('1.4.9.16')).to eq 0
+        expect(v('4.4.0')).to be >= v('4.4')
+        expect(v('2.3.1.0')).to be <= v('2.3.1.0.0')
       end
     end
   end
@@ -108,16 +123,16 @@ RSpec.describe 'Version' do
   describe '#to_s' do
     it 'stringifies' do
       expect(Version.new.to_s).to eq ''
-      expect(Version.new('').to_s).to eq ''
-      expect(Version.new('0').to_s).to eq ''
+      expect(v('').to_s).to eq ''
+      expect(v('0').to_s).to eq ''
     end
 
     it 'stringifies when major, minor and build numbers are zeros' do
-      expect(Version.new('0.1.0.2.0').to_s).to eq '0.1.0.2'
+      expect(v('0.1.0.2.0').to_s).to eq '0.1.0.2'
     end
 
     it 'stringifies' do
-      expect(version_square.to_s).to eq '1.4.9.16'
+      expect(v('1.4.9.16').to_s).to eq '1.4.9.16'
     end
   end
 
@@ -148,7 +163,7 @@ RSpec.describe 'Version' do
 
       it 'can create new instance with existing versions' do
         Version::Range.new(Version.new, Version.new)
-        Version::Range.new(Version.new('1'), Version.new('1.0.1'))
+        Version::Range.new(v('1'), v('1.0.1'))
       end
 
       it 'can create new instance with strings' do
@@ -162,6 +177,8 @@ RSpec.describe 'Version' do
     end
 
     describe '#include?' do
+      let(:major_range) { Version::Range.new('1', '2') }
+
       it 'raises ArgumentError when versions contain non-numeric symbols' do
         expect_include_error(major_range, '1.0-SNAPSHOT')
         expect_include_error(major_range, '1.-1')
@@ -193,7 +210,7 @@ RSpec.describe 'Version' do
     end
 
     def map_to_versions(string_versions)
-      string_versions.map { |v| Version.new(v) }
+      string_versions.map { |version| v(version) }
     end
 
     describe '#to_a' do
@@ -207,7 +224,7 @@ RSpec.describe 'Version' do
       end
 
       it 'can generate versions with starting zerolike version' do
-        range = Version::Range.new(Version.new('0'), Version.new('0.0.5'))
+        range = Version::Range.new(v('0'), v('0.0.5'))
         expected = map_to_versions [
           '0', '0.0.1', '0.0.2', '0.0.3', '0.0.4'
         ]
@@ -238,7 +255,7 @@ RSpec.describe 'Version' do
       end
 
       it 'can generate versions to major version' do
-        range = Version::Range.new(Version.new('1.8.9'), Version.new('2.1'))
+        range = Version::Range.new(v('1.8.9'), v('2.1'))
         expected = map_to_versions [
           '1.8.9', '1.9.0', '1.9.1', '1.9.2', '1.9.3', '1.9.4', '1.9.5',
           '1.9.6', '1.9.7', '1.9.8', '1.9.9', '2', '2.0.1', '2.0.2',
